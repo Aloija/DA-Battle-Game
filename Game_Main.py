@@ -4,7 +4,7 @@ turn = 1
 is_game = 1
 
 '''
-111
+11122
 '''
 
 game.test_mode = True
