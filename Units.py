@@ -8,11 +8,11 @@ class Unit:
         self.max_hp = hp
         self.damage_bonus = damage_bonus
         self.defence = defence
-        self.hit_chance = 10    # БОНУС СДЕЛАТЬ
+        self.hit_chance = 10
         self.__base_hit = 10
         self.crit_chance = 20
         self.__base_crit = 20
-        self.spells_list = spells_list  # СДЕЛАТЬ ПО ID
+        self.spells_list = spells_list
         self.abilities = []
         self.actions = ['Автоатака', 'Способность', 'Предмет']
         self.debuffs = []

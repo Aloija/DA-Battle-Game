@@ -13,7 +13,7 @@ while is_game != 0:
         print('\nХодит', character.get_name())
         game.actions(character)
         for effect in character.buffs:
-            character.effect_reduce_duration(effect)    # МОЖНО ОБЪЕДЕНИТЬ
+            character.effect_reduce_duration(effect)    # МОЖНО ОБЪЕДЕНИТЬ С НИЖНИМ
             character.remove_effect(effect)
         for effect in character.debuffs:
             character.effect_reduce_duration(effect)

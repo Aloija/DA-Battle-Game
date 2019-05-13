@@ -1,12 +1,6 @@
 from Units import *
 from Spells import *
 
-'''
-effect_type == 'buff_active' / 'buff_passive' / 'debuff' / 'aura'
-target == 'single' / 'AOE' / '1 - 9999' 
-'''
-
-
 magic_bolt = Spells(spell_id=10001, name='Волшебная стрела', damage=1, cooldown=3, duration=1,
                     effect_type='buff_active', targets='single', school='magic', crit_type='damage', crit_strength=2)
 spell_2 = Spells(spell_id=31047, name='Подлый трюк', damage=1.5, cooldown=3, duration=1, effect_type='debuff',

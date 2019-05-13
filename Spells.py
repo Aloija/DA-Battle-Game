@@ -8,9 +8,9 @@ class Spells:
         self.duration = duration
         self.harm = other.get('harm', True)
         self.effect_type = effect_type
-        self.targets = targets      # Single, AOE, Number of
+        self.targets = targets
         self.is_random = other.get('is_random', False)
-        self.school = school    # magic, physic
+        self.school = school
         self.crit_type = crit_type
         self.crit_strength = crit_strength
         self.action_cost = 2    # ДОДЕЛАТЬ
