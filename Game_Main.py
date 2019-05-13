@@ -1,11 +1,8 @@
 from Base import *
+from Objects import *
 
 turn = 1
 is_game = 1
-
-'''
-11122
-'''
 
 game.test_mode = True
 game.pre_start()

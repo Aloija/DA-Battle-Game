@@ -1,6 +1,3 @@
-from Base import *
-
-
 class Spells:
     def __init__(self, spell_id, name, damage, cooldown, duration, effect_type, targets, school, crit_type,
                  crit_strength, **other):
@@ -35,13 +32,13 @@ class Spells:
 
     def generate_damage(self, character_self, success):
         if success == 1:
-            dmg = round(character_self.roll_damage(success, 'spell') * self.damage)
+            dmg = round(character_self.roll_damage(success, 'spell', self.school) * self.damage)
             return dmg
         elif success == 'crit':
             if self.crit_type == 'damage':
-                dmg = round(character_self.roll_damage(success, 'spell') * self.crit_strength)
+                dmg = round(character_self.roll_damage(success, 'spell', self.school) * self.crit_strength)
             else:
-                dmg = round(character_self.roll_damage(success, 'spell') * self.damage)
+                dmg = round(character_self.roll_damage(success, 'spell', self.school) * self.damage)
             return dmg
 
     def dynamic_duration(self, character_self, target, success):

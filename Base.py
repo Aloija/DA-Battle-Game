@@ -10,6 +10,7 @@ class Game:
     def pre_start(self):
         for char in characters:
             char.set_abilities()
+            char.set_damage(weapons)
         self.roll_initiative()
         self.sort_initiative()
         self.print_initiative()
@@ -157,11 +158,11 @@ class Game:
             print(character_self.get_name(), ' d=', dice, ': промахивается', sep='')
             return
         else:
-            dmg = character_self.roll_damage(success, 'AA', game)
-            damage = character_self.print_damage(character_self.damage_type, target[0], dmg, success)
+            dmg = character_self.roll_damage(success, 'AA', False)
+            damage = character_self.print_damage(character_self.aa_damage_type, target[0], dmg, success)
             for tar in target:
                 if tar is not None:
-                    tar.take_damage(dmg, character_self.damage_type)
+                    tar.take_damage(dmg, character_self.aa_damage_type)
                     print(character_self.get_name(), ' атакует ', tar.get_name(), ' d=', dice, ':',
                           ' (', *damage, ')',
                           sep='')
