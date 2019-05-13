@@ -18,7 +18,7 @@ test_spells = [magic_bolt, spell_2, spell_3, heal]
 player_1 = Player(name='Мэйрис', hp=200, damage_bonus=0, defence=-2, characteristics={'stamina': 2, 'strength': 0,
                                                                                       'agility': 4, 'intelligence': 1,
                                                                                       'wisdom': 20, 'observation': 3},
-                  hit_chance=1, crit_chance=2, spells_list=test_spells, c_class='rogue', weapon='small_arms')
+                  hit_chance=1, crit_chance=2, spells_list=test_spells, c_class='rogue', weapon='ranged')
 
 player_2 = Player(name='Хекс', hp=20, damage_bonus=0, defence=2, characteristics={'stamina': 3, 'strength': 3,
                                                                                   'agility': 1, 'intelligence': 0,
@@ -32,7 +32,7 @@ enemy_2 = Enemy(name='Разикаль', hp=300, base_damage=[9, 14], damage_bon
                 rank='elite', damage_type='magic')
 
 weapons = {'staff': [5, 10], 'shield': [3, 8], 'two_handed': [10, 15], 'duals_swords': [9, 14], 'dual_daggers': [7, 12],
-           'small_arms': [8, 13], 'one_sword': [4, 9], 'one_dagger': [3, 8]}
+           'ranged': [8, 13], 'one_sword': [4, 9], 'one_dagger': [3, 8]}
 
 players = []
 enemies = []

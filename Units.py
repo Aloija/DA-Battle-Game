@@ -277,7 +277,7 @@ class Player(Unit):
         elif self.weapon == 'one_dagger':
             self.damage['physic'][0] = weapons_list[self.weapon][0] + self.characteristics['agility']
             self.damage['physic'][1] = weapons_list[self.weapon][1] + self.characteristics['agility']
-        elif self.weapon == 'small_arms':
+        elif self.weapon == 'ranged':
             self.damage['physic'][0] = weapons_list[self.weapon][0] + self.characteristics['agility']
             self.damage['physic'][1] = weapons_list[self.weapon][1] + self.characteristics['agility']
         else:
