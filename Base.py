@@ -85,7 +85,7 @@ class Game:
         print('ИНИЦИАТИВА:')
         print(', '.join([character.get_name() + '(' + str(character.initiative) + ')' for character in characters]))
 
-    def roll_dice(self, character_self):
+    def roll_dice(self, character_self, target, is_harm):
         dice = 0
 
         if self.test_mode:
@@ -93,12 +93,22 @@ class Game:
         elif not self.test_mode:
             dice = int(input('Введите результат броска:\n'))
 
-        if dice >= character_self.crit_chance:
-            return dice, 'crit'
-        elif character_self.hit_chance <= dice < character_self.crit_chance:
-            return dice, 1
+        if is_harm:
+            if dice >= character_self.crit_chance:
+                return dice, 'crit'
+            elif character_self.hit_chance <= dice - target[0].hit_dodge + character_self.hit_harm_bonus['harm'] \
+                    != character_self.crit_chance:
+                return dice, 1
+            else:
+                return dice, 0
         else:
-            return dice, 0
+            if dice >= character_self.crit_chance:
+                return dice, 'crit'
+            elif character_self.hit_chance <= dice + character_self.hit_harm_bonus['harm'] \
+                    != character_self.crit_chance:
+                return dice, 1
+            else:
+                return dice, 0
 
     def actions(self, character_self):
         self.go_back = False
@@ -152,7 +162,7 @@ class Game:
         target.append(self.choose_target(character_self, enemies, players))
         if self.go_back:
             return
-        dice, success = self.roll_dice(character_self)
+        dice, success = self.roll_dice(character_self, target, True)
 
         if success == 0:
             print(character_self.get_name(), ' d=', dice, ': промахивается', sep='')
@@ -175,13 +185,13 @@ class Game:
             self.actions(character_self)
             return
         spell = character_self.abilities[index]['ability']
-        dice, success = self.roll_dice(character_self)
+        target = self.spell_target(character_self, spell)
+        dice, success = self.roll_dice(character_self, target, spell.harm)
         if success == 0:
             print(character_self.get_name(), ' (d=', dice, ') промахивается', sep='')
             return
         else:
             dmg = spell.generate_damage(character_self, success)
-            target = self.spell_target(character_self, spell)
             for tar in target:
                 spell.use_spell(tar, character_self, dmg, success)
                 spell.description(target, character_self, dmg, success, dice)

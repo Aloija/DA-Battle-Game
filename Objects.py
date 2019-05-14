@@ -26,10 +26,10 @@ player_2 = Player(name='Хекс', hp=20, damage_bonus=0, defence=2, characteris
                   hit_chance=10, crit_chance=20, spells_list=test_spells, c_class='warrior', weapon='dual_swords')
 
 
-enemy_1 = Enemy(name='Карамелька', hp=30, base_damage=[12, 17], damage_bonus=0, defence=4, spells_list=test_spells,
-                rank='common')
-enemy_2 = Enemy(name='Разикаль', hp=300, base_damage=[9, 14], damage_bonus=5, defence=4, spells_list=test_spells,
-                rank='elite', damage_type='magic')
+enemy_1 = Enemy(name='Карамелька', hp=30, damage=[12, 17], damage_bonus=0, defence=4, spells_list=test_spells,
+                rank='common', c_class='demon')
+enemy_2 = Enemy(name='Разикаль', hp=300, damage=[9, 14], damage_bonus=5, defence=4, spells_list=test_spells,
+                rank='elite', damage_type='magic', c_class='dragon')
 
 weapons = {'staff': [5, 10], 'shield': [3, 8], 'two_handed': [10, 15], 'duals_swords': [9, 14], 'dual_daggers': [7, 12],
            'ranged': [8, 13], 'one_sword': [4, 9], 'one_dagger': [3, 8]}

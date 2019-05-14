@@ -2,16 +2,16 @@ import random
 
 
 class Unit:
-    def __init__(self, name, hp, damage_bonus, defence, spells_list, **other):
+    def __init__(self, name, hp, damage_bonus, defence, spells_list, c_class, **other):
         self.__name = name
         self.hp = hp
         self.max_hp = hp
         self.damage_bonus = damage_bonus
         self.defence = defence
         self.hit_chance = 10
-        self.__base_hit = 10
+        self.__base_hit = self.hit_chance
         self.crit_chance = 20
-        self.__base_crit = 20
+        self.__base_crit = self.crit_chance
         self.spells_list = spells_list
         self.abilities = []
         self.actions = ['Автоатака', 'Способность', 'Предмет']
@@ -19,6 +19,7 @@ class Unit:
         self.buffs = []
         self.auras = []
         self.initiative = 0
+        self.c_class = c_class
         self.actions_count = 300  # AA - 2, spell - 2, item - 1, free_spell - 1
         self.damage_reduce = {'magic': 0.25, 'physic': 0.5}
         self.hit_dodge = other.get('hit_dodge', 0)
@@ -84,7 +85,7 @@ class Unit:
                 damage_reduce = ''
 
         if damage_reduce != '':
-            damage_total = round(dmg - dmg * (damage_reduce/100) - tar.defence)
+            damage_total = round(dmg - dmg * (damage_reduce/100))
             damage_reduce = '-', str(damage_reduce) + '%'
         else:
             damage_total = dmg - tar.defence
@@ -107,15 +108,6 @@ class Unit:
             damage_print = *damage, *damage_reduce, *defence, '=', damage_total, crit
 
         return damage_print
-
-    def roll_dice(self):
-        dice = random.randint(1, 2)
-        if dice >= self.crit_chance:
-            return dice, 'crit'
-        elif self.hit_chance <= dice < self.crit_chance:
-            return dice, 1
-        else:
-            return dice, 0
 
     def set_abilities(self):
         for spell in self.spells_list:
@@ -252,19 +244,16 @@ class Unit:
     
 
 class Player(Unit):
-    def __init__(self, name, hp, damage_bonus, defence, characteristics, hit_chance, crit_chance, spells_list,
-                 c_class, **other):
-        Unit.__init__(self, name, hp, damage_bonus, defence, spells_list)
+    def __init__(self, name, hp, damage_bonus, defence, hit_chance, crit_chance, spells_list, c_class,
+                 weapon, characteristics):
+        Unit.__init__(self, name, hp, damage_bonus, defence, spells_list, c_class)
         self.characteristics = characteristics
         self.hit_chance = hit_chance
-        self.base_hit = self.hit_chance
         self.crit_chance = crit_chance
-        self.base_crit = self.crit_chance
-        self.c_class = c_class
+        self.weapon = weapon
         self.side = 'players'
         self.hp = self.hp + (self.characteristics['stamina'] * 10)
         self.damage = {'physic': [0, 0], 'magic': [0, 0]}
-        self.weapon = other.get('weapon', None)
         self.aa_damage_type = 'physic'
 
     def set_damage(self, weapons_list):
@@ -357,20 +346,18 @@ class Player(Unit):
 
 
 class Enemy(Unit):
-    def __init__(self, name, hp, damage_bonus, defence, spells_list, rank, **other):
-        Unit.__init__(self, name, hp, damage_bonus, defence, spells_list)
+    def __init__(self, name, hp, damage, damage_bonus, defence, spells_list, rank, c_class, **other):
+        Unit.__init__(self, name, hp, damage_bonus, defence, spells_list, c_class)
         self.rank = rank
+        self.aa_damage_type = other.get('damage_type', 'physic')
+        self.damage = damage
         self.side = 'enemies'
         self.actions = ['Автоатака', 'Способность']
-        self.aa_damage_type = other.get('damage_type', 'physic')
-        self.damage = other.get('damage', [0, 0])
 
         if self.rank == 'elite':
             self.hit_chance = 5
-            self.base_hit = self.hit_chance
         elif self.rank == 'rare':
             self.hit_chance = 7
-            self.base_hit = self.hit_chance
         else:
             self.actions = ['Автоатака']
 
