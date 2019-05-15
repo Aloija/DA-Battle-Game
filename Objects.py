@@ -31,8 +31,9 @@ enemy_1 = Enemy(name='Карамелька', hp=30, damage=[12, 17], damage_bonu
 enemy_2 = Enemy(name='Разикаль', hp=300, damage=[9, 14], damage_bonus=5, defence=4, spells_list=test_spells,
                 rank='elite', damage_type='magic', c_class='dragon')
 
-weapons = {'staff': [5, 10], 'shield': [3, 8], 'two_handed': [10, 15], 'duals_swords': [9, 14], 'dual_daggers': [7, 12],
-           'ranged': [8, 13], 'one_sword': [4, 9], 'one_dagger': [3, 8]}
+weapons = {'wisdom': {'staff': [5, 10]},
+           'strength': {'shield': [3, 8], 'two_handed': [10, 15], 'duals_swords': [9, 14], 'one_sword': [4, 9]},
+           'agility': {'dual_daggers': [7, 12],'ranged': [8, 13], 'one_dagger': [3, 8]}}
 
 players = []
 enemies = []

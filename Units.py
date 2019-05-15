@@ -9,22 +9,27 @@ class Unit:
         self.damage_bonus = damage_bonus
         self.defence = defence
         self.hit_chance = 10
-        self.__base_hit = self.hit_chance
         self.crit_chance = 20
-        self.__base_crit = self.crit_chance
         self.spells_list = spells_list
+        self.c_class = c_class
         self.abilities = []
-        self.actions = ['Автоатака', 'Способность', 'Предмет']
         self.debuffs = []
         self.buffs = []
         self.auras = []
         self.initiative = 0
-        self.c_class = c_class
+        self.__base_hit = self.hit_chance
+        self.__base_crit = self.crit_chance
         self.actions_count = 300  # AA - 2, spell - 2, item - 1, free_spell - 1
+        self.damage = {'physic': (other.get('physic_dmg'), [0, 0]), 'magic': (other.get('magic_dmg'), [0, 0])}
+        self.aa_damage_type = other.get('damage_type', 'physic')
+        self.damage_harm_bonus = {'harm': 0, 'friendly': 0}
+
         self.damage_reduce = {'magic': 0.25, 'physic': 0.5}
         self.hit_dodge = other.get('hit_dodge', 0)
-        self.damage_harm_bonus = {'harm': 0, 'friendly': 0}
+
         self.hit_harm_bonus = {'harm': 0, 'friendly': 0}
+        self.actions = ['Автоатака', 'Способность', 'Предмет']
+
 
     def get_rank(self):
         pass
@@ -54,6 +59,38 @@ class Unit:
         if self.hp < 0:
             self.hp = 0
         return self.hp
+
+    def roll_aa_damage(self, success):
+        if self.aa_damage_type == 'magic':
+            dmg = round(random.randint(self.damage['magic'][0], self.damage['magic'][1]) + self.damage_bonus)
+        else:
+            dmg = round(random.randint(self.damage['physic'][0], self.damage['physic'][1]) + self.damage_bonus)
+
+        if success == 'crit':
+                dmg *= 1.5
+
+        return int(dmg)
+
+    def roll_spell_damage(self, spell, success):
+        if spell.school == 'magic':
+            dmg = random.randint(self.damage['magic'][0], self.damage['magic'][1]) + self.damage_bonus
+        else:
+            dmg = random.randint(self.damage['physic'][0], self.damage['physic'][1]) + self.damage_bonus
+
+        if spell.harm:
+            dmg += self.damage_harm_bonus['harm']
+        else:
+            dmg += self.damage_harm_bonus['friendly']
+
+        if success == 1:
+            dmg = round(dmg * spell.damage)
+        if success == 'crit':
+            if spell.crit_type == 'damage':
+                dmg = round(dmg * spell.crit_strength)
+            else:
+                dmg = round(dmg * spell.damage)
+
+        return dmg
 
     @staticmethod
     def print_damage(damage_type, target, dmg, success):
@@ -257,31 +294,21 @@ class Player(Unit):
         self.aa_damage_type = 'physic'
 
     def set_damage(self, weapons_list):
-        if self.weapon == 'staff':
-            self.damage['physic'][0] = weapons_list[self.weapon][0] + self.characteristics['wisdom']
-            self.damage['physic'][1] = weapons_list[self.weapon][1] + self.characteristics['wisdom']
-        elif self.weapon == 'dual_daggers':
-            self.damage['physic'][0] = weapons_list[self.weapon][0] + self.characteristics['agility']
-            self.damage['physic'][1] = weapons_list[self.weapon][1] + self.characteristics['agility']
-        elif self.weapon == 'one_dagger':
-            self.damage['physic'][0] = weapons_list[self.weapon][0] + self.characteristics['agility']
-            self.damage['physic'][1] = weapons_list[self.weapon][1] + self.characteristics['agility']
-        elif self.weapon == 'ranged':
-            self.damage['physic'][0] = weapons_list[self.weapon][0] + self.characteristics['agility']
-            self.damage['physic'][1] = weapons_list[self.weapon][1] + self.characteristics['agility']
-        else:
-            self.damage['physic'][0] = weapons_list[self.weapon][0] + self.characteristics['strength']
-            self.damage['physic'][1] = weapons_list[self.weapon][1] + self.characteristics['strength']
+        if self.weapon in weapons_list['strength']:
+            for i in range(2):
+                self.damage['physic'][i] = weapons_list['strength'][self.weapon][i] + self.characteristics['strength']
+        elif self.weapon in weapons_list['agility']:
+            for i in range(2):
+                self.damage['physic'][i] = weapons_list['agility'][self.weapon][i] + self.characteristics['agility']
 
         if self.c_class == 'mage':
-            if self.weapon == 'staff':
-                self.damage['magic'][0] = weapons_list[self.weapon][0] + self.characteristics['wisdom']
-                self.damage['magic'][1] = weapons_list[self.weapon][1] + self.characteristics['wisdom']
-                self.aa_damage_type = 'magic'
+            if self.weapon in weapons_list['wisdom']:
+                for i in range(2):
+                    self.damage['magic'][i] = weapons_list['wisdom'][self.weapon][i] + self.characteristics['wisdom']
+                    self.damage['physic'][i] = weapons_list['wisdom'][self.weapon][i] + self.characteristics['wisdom']
+                    self.aa_damage_type = 'magic'
             else:
                 self.damage['magic'] = [self.characteristics['wisdom'], self.characteristics['wisdom']]
-        else:
-            self.damage['magic'] = [0, 0]
 
     def get_damage(self):
         phys_d_min = self.damage['physic'][0] + self.damage_bonus
@@ -297,25 +324,35 @@ class Player(Unit):
         else:
             return phys_d_min, '-', phys_d_max
 
-    def roll_damage(self, success, is_aa, damage_type):
-        if not damage_type:
-            if self.c_class == 'mage':
-                if self.weapon == 'staff':
-                    dmg = random.randint(self.damage['magic'][0], self.damage['magic'][1]) + self.damage_bonus
-                else:
-                    dmg = random.randint(self.damage['physic'][0], self.damage['physic'][1]) + self.damage_bonus
-            else:
-                dmg = random.randint(self.damage['physic'][0], self.damage['physic'][1]) + self.damage_bonus
-        elif damage_type == 'magic':
+    def roll_aa_damage(self, success):
+        if self.aa_damage_type == 'magic':
+            dmg = random.randint(self.damage['magic'][0], self.damage['magic'][1]) + self.damage_bonus
+        else:
+            dmg = random.randint(self.damage['physic'][0], self.damage['physic'][1]) + self.damage_bonus
+        if success == 'crit':
+            dmg *= 1.5
+        return int(dmg)
+
+    def roll_spell_damage(self, spell, success):
+        if spell.school == 'magic':
             dmg = random.randint(self.damage['magic'][0], self.damage['magic'][1]) + self.damage_bonus
         else:
             dmg = random.randint(self.damage['physic'][0], self.damage['physic'][1]) + self.damage_bonus
 
-        if is_aa == 'AA':
-            if success == 'crit':
-                dmg *= 1.5
+        if spell.harm:
+            dmg += self.damage_harm_bonus['harm']
+        else:
+            dmg += self.damage_harm_bonus['friendly']
 
-        return int(dmg)
+        if success == 1:
+            dmg = round(dmg * spell.damage)
+        if success == 'crit':
+            if spell.crit_type == 'damage':
+                dmg = round(dmg * spell.crit_strength)
+            else:
+                dmg = round(dmg * spell.damage)
+
+        return dmg
 
     def get_stats(self):
         if self.hp > 0:
@@ -350,9 +387,9 @@ class Enemy(Unit):
         Unit.__init__(self, name, hp, damage_bonus, defence, spells_list, c_class)
         self.rank = rank
         self.aa_damage_type = other.get('damage_type', 'physic')
-        self.damage = damage
         self.side = 'enemies'
         self.actions = ['Автоатака', 'Способность']
+        self.damage = damage
 
         if self.rank == 'elite':
             self.hit_chance = 5
@@ -361,21 +398,37 @@ class Enemy(Unit):
         else:
             self.actions = ['Автоатака']
 
-    def get_rank(self):
-        return self.rank
-
     def get_damage(self):
         d_min = self.damage[0] + self.damage_bonus
         d_max = self.damage[1] + self.damage_bonus
         return d_min, '-', d_max
 
-    def roll_damage(self, success, _from, damage_type):
+    def roll_aa_damage(self, success):
         dmg = random.randint(self.damage[0], self.damage[1]) + self.damage_bonus
-        if _from == 'AA':
-            if success == 'crit':
-                dmg *= 1.5
-
+        if success == 'crit':
+            dmg *= 1.5
         return int(dmg)
+
+    def roll_spell_damage(self, spell, success):
+        if spell.school == 'magic':
+            dmg = random.randint(self.damage[0], self.damage[1]) + self.damage_bonus
+        else:
+            dmg = random.randint(self.damage[0], self.damage[1]) + self.damage_bonus
+
+        if spell.harm:
+            dmg += self.damage_harm_bonus['harm']
+        else:
+            dmg += self.damage_harm_bonus['friendly']
+
+        if success == 1:
+            dmg = round(dmg * spell.damage)
+        if success == 'crit':
+            if spell.crit_type == 'damage':
+                dmg = round(dmg * spell.crit_strength)
+            else:
+                dmg = round(dmg * spell.damage)
+
+        return dmg
 
     def get_stats(self):
         if self.hp > 0:

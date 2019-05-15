@@ -85,7 +85,7 @@ class Game:
         print('ИНИЦИАТИВА:')
         print(', '.join([character.get_name() + '(' + str(character.initiative) + ')' for character in characters]))
 
-    def roll_dice(self, character_self, target, is_harm):
+    def roll_dice(self, character_self, target, is_harm_target):
         dice = 0
 
         if self.test_mode:
@@ -93,7 +93,13 @@ class Game:
         elif not self.test_mode:
             dice = int(input('Введите результат броска:\n'))
 
-        if is_harm:
+            '''Если цель враждебная из броска вычитается штраф к попаданию по ней (уклонение)'''
+
+        if is_harm_target:
+            if len(target) > 1:
+                if character_self.hit_chance <= dice + character_self.hit_harm_bonus['harm']\
+                        != character_self.crit_chance:
+                    return dice, 1
             if dice >= character_self.crit_chance:
                 return dice, 'crit'
             elif character_self.hit_chance <= dice - target[0].hit_dodge + character_self.hit_harm_bonus['harm'] \
@@ -104,7 +110,7 @@ class Game:
         else:
             if dice >= character_self.crit_chance:
                 return dice, 'crit'
-            elif character_self.hit_chance <= dice + character_self.hit_harm_bonus['harm'] \
+            elif character_self.hit_chance <= dice + character_self.hit_harm_bonus['friendly'] \
                     != character_self.crit_chance:
                 return dice, 1
             else:
@@ -168,13 +174,13 @@ class Game:
             print(character_self.get_name(), ' d=', dice, ': промахивается', sep='')
             return
         else:
-            dmg = character_self.roll_damage(success, 'AA', False)
-            damage = character_self.print_damage(character_self.aa_damage_type, target[0], dmg, success)
+            dmg = character_self.roll_aa_damage(success)
+            dmg_print = character_self.print_damage(character_self.aa_damage_type, target, dmg, success)
             for tar in target:
                 if tar is not None:
                     tar.take_damage(dmg, character_self.aa_damage_type)
                     print(character_self.get_name(), ' атакует ', tar.get_name(), ' d=', dice, ':',
-                          ' (', *damage, ')',
+                          ' (', *dmg_print, ')',
                           sep='')
 
             return target
@@ -191,7 +197,7 @@ class Game:
             print(character_self.get_name(), ' (d=', dice, ') промахивается', sep='')
             return
         else:
-            dmg = spell.generate_damage(character_self, success)
+            dmg = character_self.roll_spell_damage(spell, success)
             for tar in target:
                 spell.use_spell(tar, character_self, dmg, success)
                 spell.description(target, character_self, dmg, success, dice)
