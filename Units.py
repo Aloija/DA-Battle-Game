@@ -30,7 +30,6 @@ class Unit:
         self.hit_harm_bonus = {'harm': 0, 'friendly': 0}
         self.actions = ['Автоатака', 'Способность', 'Предмет']
 
-
     def get_rank(self):
         pass
 
@@ -59,38 +58,6 @@ class Unit:
         if self.hp < 0:
             self.hp = 0
         return self.hp
-
-    def roll_aa_damage(self, success):
-        if self.aa_damage_type == 'magic':
-            dmg = round(random.randint(self.damage['magic'][0], self.damage['magic'][1]) + self.damage_bonus)
-        else:
-            dmg = round(random.randint(self.damage['physic'][0], self.damage['physic'][1]) + self.damage_bonus)
-
-        if success == 'crit':
-                dmg *= 1.5
-
-        return int(dmg)
-
-    def roll_spell_damage(self, spell, success):
-        if spell.school == 'magic':
-            dmg = random.randint(self.damage['magic'][0], self.damage['magic'][1]) + self.damage_bonus
-        else:
-            dmg = random.randint(self.damage['physic'][0], self.damage['physic'][1]) + self.damage_bonus
-
-        if spell.harm:
-            dmg += self.damage_harm_bonus['harm']
-        else:
-            dmg += self.damage_harm_bonus['friendly']
-
-        if success == 1:
-            dmg = round(dmg * spell.damage)
-        if success == 'crit':
-            if spell.crit_type == 'damage':
-                dmg = round(dmg * spell.crit_strength)
-            else:
-                dmg = round(dmg * spell.damage)
-
-        return dmg
 
     @staticmethod
     def print_damage(damage_type, target, dmg, success):
