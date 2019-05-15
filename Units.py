@@ -6,29 +6,31 @@ class Unit:
         self.__name = name
         self.hp = hp
         self.max_hp = hp
-        self.damage_bonus = damage_bonus
-        self.defence = defence
-        self.hit_chance = 10
-        self.crit_chance = 20
-        self.spells_list = spells_list
         self.c_class = c_class
+
+        self.spells_list = spells_list
         self.abilities = []
         self.debuffs = []
         self.buffs = []
         self.auras = []
-        self.initiative = 0
+
+        self.hit_chance = 10
+        self.crit_chance = 20
         self.__base_hit = self.hit_chance
         self.__base_crit = self.crit_chance
-        self.actions_count = 300  # AA - 2, spell - 2, item - 1, free_spell - 1
-        self.damage = {'physic': (other.get('physic_dmg'), [0, 0]), 'magic': (other.get('magic_dmg'), [0, 0])}
-        self.aa_damage_type = other.get('damage_type', 'physic')
-        self.damage_harm_bonus = {'harm': 0, 'friendly': 0}
+        self.hit_temp_bonus = {'harm': 0, 'friendly': 0}
 
+        self.damage_bonus = damage_bonus
+        self.aa_damage_type = other.get('damage_type', 'physic')
+        self.damage_temp_bonus = {'harm': 0, 'friendly': 0}
+
+        self.defence = defence
         self.damage_reduce = {'magic': 0.25, 'physic': 0.5}
         self.hit_dodge = other.get('hit_dodge', 0)
 
-        self.hit_harm_bonus = {'harm': 0, 'friendly': 0}
+        self.initiative = 0
         self.actions = ['Автоатака', 'Способность', 'Предмет']
+        self.actions_count = 300  # AA - 2, spell - 2, item - 1, free_spell - 1
 
     def get_rank(self):
         pass
@@ -45,19 +47,13 @@ class Unit:
     def get_defence(self):
         return self.defence
 
-    def take_damage(self, dmg, damage_type):
-        if damage_type == 'magic':
-            dmg = dmg - round(dmg * self.damage_reduce['magic'])
-        elif damage_type == 'physic':
-            dmg = dmg - round(dmg * self.damage_reduce['physic'])
-        else:
-            dmg = dmg
-        if dmg >= self.defence:
-            dmg = dmg - self.defence
-            self.hp -= dmg
-        if self.hp < 0:
-            self.hp = 0
-        return self.hp
+    def set_abilities(self):
+        for spell in self.spells_list:
+            self.abilities.append({'ability': spell, 'cooldown': -1, 'duration': -1})
+
+    def reset_actions(self):
+        self.actions_count = 3
+        return self.actions_count
 
     @staticmethod
     def print_damage(damage_type, target, dmg, success):
@@ -113,13 +109,104 @@ class Unit:
 
         return damage_print
 
-    def set_abilities(self):
-        for spell in self.spells_list:
-            self.abilities.append({'ability': spell, 'cooldown': -1, 'duration': -1})
 
-    def reset_actions(self):
-        self.actions_count = 3
+    '''                         Эффекты                        '''
+
+    def heal(self, dmg):
+        self.hp += dmg
+        if self.hp > self.max_hp:
+            self.set_hp_to_max()
+        return self.hp
+
+    def take_damage(self, dmg, damage_type):
+        if damage_type == 'magic':
+            dmg -= round(dmg * self.damage_reduce['magic'])
+        elif damage_type == 'physic':
+            dmg -= round(dmg * self.damage_reduce['physic'])
+        else:
+            dmg = dmg
+        if dmg >= self.defence:
+            dmg = dmg - self.defence
+            self.hp -= dmg
+        if self.hp < 0:
+            self.hp = 0
+        return self.hp
+
+    def reduce_action(self, cost):
+        self.actions_count -= cost
         return self.actions_count
+
+    def add_cds(self, spell, cooldown):
+        for now in self.abilities:
+            if now['ability'] == spell:
+                now['cooldown'] += cooldown
+        return self.abilities
+
+    def cd_reduce(self, spell):
+        for now in self.abilities:
+            if now['ability'] == spell:
+                if now['cooldown'] > -1 and now['duration'] == -1:
+                    now['cooldown'] -= 1
+        return self.abilities
+
+    def add_durs(self, spell, duration):
+        for now in self.abilities:
+            if now['ability'] == spell:
+                now['duration'] += duration
+        return self.abilities
+
+    def dur_reduce(self, spell):
+        for now in self.abilities:
+            if now['ability'] == spell:
+                if now['duration'] > -1:
+                    now['duration'] -= 1
+        return self.abilities
+
+    def set_hp_to_max(self):
+        self.hp = self.max_hp
+
+    def buff_hit(self, value):
+        self.hit_chance -= value
+        return self.hit_chance
+
+    def debuff_hit(self, value):
+        self.hit_chance += value
+        return self.hit_chance
+
+    def effect_reduce_duration(self, effect):
+        if effect in self.buffs:
+            effect.dur_reduce()
+        if effect in self.debuffs:
+            effect.dur_reduce()
+
+        self.remove_effect(effect)
+
+        return self
+
+    def remove_effect(self, effect):
+        if effect.duration == 0:
+            if effect in self.buffs:
+                effect.remove_effect(self)
+                self.buffs.remove(effect)
+            if effect in self.debuffs:
+                self.debuffs.remove(effect)
+
+        return self
+
+    def on_time_effects(self):
+        pass
+
+    def set_effect_to_0(self, effect):
+        if effect in self.buffs:
+            effect.duration = 0
+        if effect in self.debuffs:
+            effect.duration = 0
+        if effect in self.auras:
+            effect.duration = 0
+
+        self.remove_effect(effect)
+
+        return self
 
     '''                         Действия                   '''
 
@@ -162,89 +249,6 @@ class Unit:
         print('0: Главное меню')
         index = int(input()) - 1
         return index
-
-    '''                         Эффекты                        '''
-
-    def add_action(self, cost):
-        self.actions_count -= cost
-        return self.actions_count
-
-    def add_cds(self, spell, cooldown):
-        for now in self.abilities:
-            if now['ability'] == spell:
-                now['cooldown'] += cooldown
-        return self.abilities
-
-    def cd_reduce(self, spell):
-        for now in self.abilities:
-            if now['ability'] == spell:
-                if now['cooldown'] > -1 and now['duration'] == -1:
-                    now['cooldown'] -= 1
-        return self.abilities
-
-    def add_durs(self, spell, duration):
-        for now in self.abilities:
-            if now['ability'] == spell:
-                now['duration'] += duration
-        return self.abilities
-
-    def dur_reduce(self, spell):
-        for now in self.abilities:
-            if now['ability'] == spell:
-                if now['duration'] > -1:
-                    now['duration'] -= 1
-        return self.abilities
-
-    def set_hp_to_max(self):
-        self.hp = self.max_hp
-
-    def heal(self, dmg):
-        self.hp += dmg
-        if self.hp > self.max_hp:
-            self.set_hp_to_max()
-        return self.hp
-
-    def buff_hit(self, value):
-        self.hit_chance -= value
-        return self.hit_chance
-
-    def debuff_hit(self, value):
-        self.hit_chance += value
-        return self.hit_chance
-
-    def effect_reduce_duration(self, effect):
-        if effect in self.buffs:
-            effect.dur_reduce()
-
-        if effect in self.debuffs:
-            effect.dur_reduce()
-
-        return self
-
-    def remove_effect(self, effect):
-        if effect.duration == 0:
-            if effect in self.buffs:
-                effect.remove_effect(self)
-                self.buffs.remove(effect)
-
-            if effect in self.debuffs:
-                self.debuffs.remove(effect)
-
-        return self
-
-    def on_time_effects(self):
-        pass
-
-    def set_effect_to_0(self, effect):
-        if effect in self.buffs:
-            effect.duration = 0
-        if effect in self.debuffs:
-            effect.duration = 0
-        if effect in self.auras:
-            effect.duration = 0
-        return self
-
-    '''Проверка всех эффектов, которые баффают для след. атаки'''
     
 
 class Player(Unit):
@@ -255,33 +259,36 @@ class Player(Unit):
         self.hit_chance = hit_chance
         self.crit_chance = crit_chance
         self.weapon = weapon
-        self.side = 'players'
         self.hp = self.hp + (self.characteristics['stamina'] * 10)
         self.damage = {'physic': [0, 0], 'magic': [0, 0]}
-        self.aa_damage_type = 'physic'
+        self.side = 'players'
 
     def set_damage(self, weapons_list):
         if self.weapon in weapons_list['strength']:
             for i in range(2):
-                self.damage['physic'][i] = weapons_list['strength'][self.weapon][i] + self.characteristics['strength']
+                self.damage['physic'][i]\
+                    = weapons_list['strength'][self.weapon][i] + self.characteristics['strength'] + self.damage_bonus
         elif self.weapon in weapons_list['agility']:
             for i in range(2):
-                self.damage['physic'][i] = weapons_list['agility'][self.weapon][i] + self.characteristics['agility']
+                self.damage['physic'][i]\
+                    = weapons_list['agility'][self.weapon][i] + self.characteristics['agility'] + self.damage_bonus
 
         if self.c_class == 'mage':
             if self.weapon in weapons_list['wisdom']:
                 for i in range(2):
-                    self.damage['magic'][i] = weapons_list['wisdom'][self.weapon][i] + self.characteristics['wisdom']
-                    self.damage['physic'][i] = weapons_list['wisdom'][self.weapon][i] + self.characteristics['wisdom']
+                    self.damage['magic'][i]\
+                        = weapons_list['wisdom'][self.weapon][i] + self.characteristics['wisdom'] + self.damage_bonus
+                    self.damage['physic'][i]\
+                        = weapons_list['wisdom'][self.weapon][i] + self.characteristics['wisdom'] + self.damage_bonus
                     self.aa_damage_type = 'magic'
             else:
                 self.damage['magic'] = [self.characteristics['wisdom'], self.characteristics['wisdom']]
 
     def get_damage(self):
-        phys_d_min = self.damage['physic'][0] + self.damage_bonus
-        phys_d_max = self.damage['physic'][1] + self.damage_bonus
-        mag_d_min = self.damage['magic'][0] + self.damage_bonus
-        mag_d_max = self.damage['magic'][1] + self.damage_bonus
+        phys_d_min = self.damage['physic'][0]
+        phys_d_max = self.damage['physic'][1]
+        mag_d_min = self.damage['magic'][0]
+        mag_d_max = self.damage['magic'][1]
 
         if self.c_class == 'mage':
             if self.damage['physic'] != self.damage['magic']:
@@ -293,23 +300,23 @@ class Player(Unit):
 
     def roll_aa_damage(self, success):
         if self.aa_damage_type == 'magic':
-            dmg = random.randint(self.damage['magic'][0], self.damage['magic'][1]) + self.damage_bonus
+            dmg = random.randint(self.damage['magic'][0], self.damage['magic'][1])
         else:
-            dmg = random.randint(self.damage['physic'][0], self.damage['physic'][1]) + self.damage_bonus
+            dmg = random.randint(self.damage['physic'][0], self.damage['physic'][1])
         if success == 'crit':
             dmg *= 1.5
         return int(dmg)
 
     def roll_spell_damage(self, spell, success):
         if spell.school == 'magic':
-            dmg = random.randint(self.damage['magic'][0], self.damage['magic'][1]) + self.damage_bonus
+            dmg = random.randint(self.damage['magic'][0], self.damage['magic'][1])
         else:
-            dmg = random.randint(self.damage['physic'][0], self.damage['physic'][1]) + self.damage_bonus
+            dmg = random.randint(self.damage['physic'][0], self.damage['physic'][1])
 
         if spell.harm:
-            dmg += self.damage_harm_bonus['harm']
+            dmg += self.damage_temp_bonus['harm']
         else:
-            dmg += self.damage_harm_bonus['friendly']
+            dmg += self.damage_temp_bonus['friendly']
 
         if success == 1:
             dmg = round(dmg * spell.damage)
@@ -353,10 +360,9 @@ class Enemy(Unit):
     def __init__(self, name, hp, damage, damage_bonus, defence, spells_list, rank, c_class, **other):
         Unit.__init__(self, name, hp, damage_bonus, defence, spells_list, c_class)
         self.rank = rank
-        self.aa_damage_type = other.get('damage_type', 'physic')
-        self.side = 'enemies'
         self.actions = ['Автоатака', 'Способность']
-        self.damage = damage
+        self.damage = [damage[0] + self.damage_bonus, damage[1] + self.damage_bonus]
+        self.side = 'enemies'
 
         if self.rank == 'elite':
             self.hit_chance = 5
@@ -366,26 +372,26 @@ class Enemy(Unit):
             self.actions = ['Автоатака']
 
     def get_damage(self):
-        d_min = self.damage[0] + self.damage_bonus
-        d_max = self.damage[1] + self.damage_bonus
+        d_min = self.damage[0]
+        d_max = self.damage[1]
         return d_min, '-', d_max
 
     def roll_aa_damage(self, success):
-        dmg = random.randint(self.damage[0], self.damage[1]) + self.damage_bonus
+        dmg = random.randint(self.damage[0], self.damage[1])
         if success == 'crit':
             dmg *= 1.5
         return int(dmg)
 
     def roll_spell_damage(self, spell, success):
         if spell.school == 'magic':
-            dmg = random.randint(self.damage[0], self.damage[1]) + self.damage_bonus
+            dmg = random.randint(self.damage[0], self.damage[1])
         else:
-            dmg = random.randint(self.damage[0], self.damage[1]) + self.damage_bonus
+            dmg = random.randint(self.damage[0], self.damage[1])
 
         if spell.harm:
-            dmg += self.damage_harm_bonus['harm']
+            dmg += self.damage_temp_bonus['harm']
         else:
-            dmg += self.damage_harm_bonus['friendly']
+            dmg += self.damage_temp_bonus['friendly']
 
         if success == 1:
             dmg = round(dmg * spell.damage)

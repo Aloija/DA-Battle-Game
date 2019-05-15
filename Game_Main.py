@@ -13,11 +13,9 @@ while is_game != 0:
         print('\nХодит', character.get_name())
         game.actions(character)
         for effect in character.buffs:
-            character.effect_reduce_duration(effect)    # МОЖНО ОБЪЕДЕНИТЬ С НИЖНИМ
-            character.remove_effect(effect)
+            character.effect_reduce_duration(effect)
         for effect in character.debuffs:
             character.effect_reduce_duration(effect)
-            character.remove_effect(effect)
         character.reset_actions()
         game.death_check()
     print('\nСТАТИСТИКА:\n')

@@ -39,13 +39,10 @@ class Game:
             if char.hp == 0:
                 for effect in char.buffs:
                     char.set_effect_to_0(effect)
-                    char.remove_effect(effect)
                 for effect in char.debuffs:
                     char.set_effect_to_0(effect)
-                    char.remove_effect(effect)
                 for effect in char.auras:
                     char.set_effect_to_0(effect)
-                    char.remove_effect(effect)
                 for now in char.abilities:
                     now['duration'] = -1
                     now['cooldown'] = -1
@@ -102,7 +99,7 @@ class Game:
                     return dice, 1
             if dice >= character_self.crit_chance:
                 return dice, 'crit'
-            elif character_self.hit_chance <= dice - target[0].hit_dodge + character_self.hit_harm_bonus['harm'] \
+            elif character_self.hit_chance <= dice - target[0].hit_dodge + character_self.hit_temp_bonus['harm'] \
                     != character_self.crit_chance:
                 return dice, 1
             else:
@@ -110,7 +107,7 @@ class Game:
         else:
             if dice >= character_self.crit_chance:
                 return dice, 'crit'
-            elif character_self.hit_chance <= dice + character_self.hit_harm_bonus['friendly'] \
+            elif character_self.hit_chance <= dice + character_self.hit_temp_bonus['friendly'] \
                     != character_self.crit_chance:
                 return dice, 1
             else:
@@ -122,17 +119,17 @@ class Game:
         if character_self.get_rank() == 'common':
             if action_index == 0:  # AA
                 self.auto_attack(character_self)
-                character_self.add_action(3)
+                character_self.reduce_action(3)
 
             elif action_index == -1:
-                character_self.add_action(3)
+                character_self.reduce_action(3)
                 return
 
         else:
             if action_index == 0:       # AA
                 if character_self.actions_count >= 2:
                     self.auto_attack(character_self)
-                    character_self.add_action(2)
+                    character_self.reduce_action(2)
                 elif character_self.actions_count == 1:
                     print('Персонаж не может использовать автоатаку, выберете другое действие')
                 else:
@@ -141,7 +138,7 @@ class Game:
             elif action_index == 1:     # spell
                 if character_self.actions_count >= 2:
                     self.spell_choose(character_self)
-                    character_self.add_action(2)
+                    character_self.reduce_action(2)
                 elif character_self.actions_count == 1:
                     print('Персонаж не может использовать заклинания, выберете другое действие')
                 else:
@@ -150,13 +147,13 @@ class Game:
             elif action_index == 2:     # item
                 if character_self.actions_count >= 1:
                     character_self.heal(5)
-                    character_self.add_action(1)
+                    character_self.reduce_action(1)
                     print(character_self.get_name(), ' пьет зелье и излечивается на ', 5, ' ХП', sep='')
                 else:
                     return
 
             elif action_index == -1:
-                character_self.add_action(3)
+                character_self.reduce_action(3)
                 return
 
         if character_self.actions_count > 0:
