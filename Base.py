@@ -93,7 +93,7 @@ class Game:
             '''Если цель враждебная из броска вычитается штраф к попаданию по ней (уклонение)'''
 
         if is_harm_target:
-            if type(target) is list:
+            if isinstance(target, list):
                 if character_self.hit_chance <= dice + character_self.hit_temp_bonus['harm']\
                         != character_self.crit_chance:
                     return dice, 1
@@ -153,32 +153,27 @@ class Game:
                     return
 
             elif action_index == -1:
-                character_self.reduce_action(3)
+                character_self.actions_count = 0
                 return
 
         if character_self.actions_count > 0:
             self.actions(character_self)
         return
 
-    def auto_attack(self, character_self):
-        target = list()
-        target.append(self.choose_target(character_self, enemies, players))
+    def auto_attack(self, caster):
+        target = self.choose_target(caster, enemies, players)
         if self.go_back:
             return
-        dice, success = self.roll_dice(character_self, target, True)
+        dice, success = self.roll_dice(caster, target, True)
 
         if success == 0:
-            print(character_self.get_name(), ' d=', dice, ': промахивается', sep='')
+            print(caster.get_name(), ' d=', dice, ': промахивается', sep='')
             return
         else:
-            dmg = character_self.roll_aa_damage(success)
-            dmg_print = character_self.print_damage(character_self.aa_damage_type, target, dmg, success)
-            for tar in target:
-                if tar is not None:
-                    tar.take_damage(dmg, character_self.aa_damage_type)
-                    print(character_self.get_name(), ' атакует ', tar.get_name(), ' d=', dice, ':',
-                          ' (', *dmg_print, ')',
-                          sep='')
+            dmg = caster.roll_aa_damage(success)
+            dmg_print = caster.print_damage(caster.aa_damage_type, target, dmg, success)
+            target.take_damage(dmg, caster.aa_damage_type)
+            print(caster.get_name(), ' атакует ', target.get_name(), ' d=', dice, ':', ' (', *dmg_print, ')', sep='')
 
             return target
 
@@ -235,14 +230,14 @@ class Game:
         return target
 
     def choose_target(self, character_self, ens, pls):
-        tar = None
+        target = None
         if character_self.side == 'enemies':
             index = character_self.choose_target(pls)
             if index == -1:
                 self.actions(character_self)
                 self.go_back = True
                 return
-            tar = pls[index]
+            target = pls[index]
 
         elif character_self.side == 'players':
             index = character_self.choose_target(ens)
@@ -250,9 +245,9 @@ class Game:
                 self.actions(character_self)
                 self.go_back = True
                 return
-            tar = ens[index]
+            target = ens[index]
 
-        return tar
+        return target
 
 
 game = Game()

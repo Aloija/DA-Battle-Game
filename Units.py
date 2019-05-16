@@ -27,9 +27,9 @@ class Unit:
         self.armor_penetration = False
 
         self.armor = armor
-        self.barrier = other.get('barrier', 0)
-        self.defence = other.get('defence', 0)
-        self.damage_reduce = {'magic': 0.25, 'physic': 0.5}
+        self.barrier = other.get('barrier', 10)
+        self.defence = other.get('defence', 10)
+        self.damage_reduce = {'magic': 0, 'physic': 0}
         self.hit_dodge = other.get('hit_dodge', 0)
 
         self.initiative = 0
@@ -55,6 +55,7 @@ class Unit:
 
     @staticmethod
     def print_damage(damage_type, target, dmg, success):
+        # ПЕЧАТЬ ОБОРОНЫ И БАРЬЕРА ДОБАВИТЬ
         damage = dmg, ''
 
         if success == 'crit':
@@ -63,9 +64,8 @@ class Unit:
             crit = ''
 
         if isinstance(target, list):
-            if len(target) > 1:
-                damage_print = *damage, *crit
-                return damage_print
+            damage_print = *damage, *crit
+            return damage_print
 
         if damage_type == 'magic':
             if target.damage_reduce['magic'] > 0:
@@ -82,24 +82,24 @@ class Unit:
             damage_total = round(dmg - dmg * (damage_reduce/100))
             damage_reduce = '-', str(damage_reduce) + '%'
         else:
-            damage_total = dmg - target.defence
+            damage_total = dmg - target.armor
 
-        if damage_total > target.defence:
-            if target.defence > 0:
-                defence = '-', target.defence
-            elif target.defence < 0:
-                defence = '+', target.defence * -1
+        if damage_total > target.armor:
+            if target.armor > 0:
+                armor = '-', target.armor
+            elif target.armor < 0:
+                armor = '+', target.armor * -1
             else:
-                defence = ''
+                armor = ''
         else:
-            damage_print = 'урон (', *damage, *damage_reduce, '=', (damage_total + target.defence), crit,\
-                           ') не пробивает броню - ', target.defence
+            damage_print = 'урон (', *damage, *damage_reduce, '=', (damage_total + target.armor), crit,\
+                           ') не пробивает броню)'
             return damage_print
 
         if dmg == damage_total:
             damage_print = dmg, crit
         else:
-            damage_print = *damage, *damage_reduce, *defence, '=', damage_total, crit
+            damage_print = *damage, *damage_reduce, *armor, '=', damage_total, crit
 
         return damage_print
 
@@ -115,8 +115,15 @@ class Unit:
 
         if self.barrier > 0:
             dmg -= self.barrier
-        if self.defence > 0:
-            dmg -= self.defence
+            self.barrier -= dmg + self.barrier
+            if self.barrier < 0:
+                self.barrier = 0
+        if dmg > 0:
+            if self.defence > 0:
+                dmg -= self.defence
+                self.defence -= dmg + self.barrier
+                if self.defence < 0:
+                    self.defence = 0
 
         if not self.armor_penetration:
             if dmg >= self.armor:
@@ -333,6 +340,15 @@ class Player(Unit):
         return dmg
 
     def get_stats(self):
+        if self.defence > 0:
+            defence = '[', self.defence, ']'
+        else:
+            defence = ''
+        if self.barrier > 0:
+            barrier = '(', self.barrier, ')'
+        else:
+            barrier = ''
+
         if self.hp > 0:
             print(self.get_name(), sep='', end='')
             print(': ', end='')
@@ -340,9 +356,11 @@ class Player(Unit):
                 effect.get_stats()
             for effect in self.debuffs:
                 effect.get_stats()
-            print('\n(', self.hit_chance, '/', self.crit_chance, ')', ' Здоровье: ', self.hp, sep='')
+            print('\n(', self.hit_chance, '/', self.crit_chance, ')', ' Здоровье: ', self.hp, *defence, *barrier,
+                  sep='')
             print('Защита:', self.armor)
             print('Урон:', *self.get_damage())
+
             for now in self.abilities:
                 if now['cooldown'] > 0:
                     if now['duration'] > 0:
@@ -408,6 +426,15 @@ class Enemy(Unit):
         return dmg
 
     def get_stats(self):
+        if self.defence > 0:
+            defence = '[', self.defence, ']'
+        else:
+            defence = ''
+        if self.barrier > 0:
+            barrier = '(', self.barrier, ')'
+        else:
+            barrier = ''
+
         if self.hp > 0:
             if self.rank == 'rare' or self.rank == 'elite':
                 print(self.get_name(), sep='', end='')
@@ -416,7 +443,8 @@ class Enemy(Unit):
                     effect.get_stats()
                 for effect in self.debuffs:
                     effect.get_stats()
-                print('\n(', self.hit_chance, '/', self.crit_chance, ')', ' Здоровье: ', self.hp, sep='')
+                print('\n(', self.hit_chance, '/', self.crit_chance, ')', ' Здоровье: ', self.hp, *defence, *barrier,
+                      sep='')
                 print('Защита:', self.armor)
                 print('Урон:', *self.get_damage())
                 for now in self.abilities:
@@ -430,7 +458,8 @@ class Enemy(Unit):
                         print(now['ability'].get_name(), ': ОТКАЧЕНО', sep='')
                 print('')
             else:
-                print(self.get_name(), ': ', self.hp, sep='', end='')
+                print('(', self.hit_chance, '/', self.crit_chance, ')', self.get_name(), ': ', self.hp, *defence,
+                      *barrier, sep='', end='')
                 for effect in self.buffs:
                     effect.get_stats()
                 for effect in self.debuffs:

@@ -30,17 +30,6 @@ class Spells:
     def get_dur(self):
         return self.duration
 
-    def roll_spell_damage(self, character_self, success):
-        '''if success == 1:
-            dmg = round(character_self.roll_aa_damage(success, 'spell', self.school) * self.damage)
-            return dmg
-        elif success == 'crit':
-            if self.crit_type == 'damage':
-                dmg = round(character_self.roll_aa_damage(success, 'spell', self.school) * self.crit_strength)
-            else:
-                dmg = round(character_self.roll_aa_damage(success, 'spell', self.school) * self.damage)
-            return dmg'''
-
     def dynamic_duration(self, character_self, target, success):
         if self.targets == 'single':
             if self.effect_type == 'buff_active':

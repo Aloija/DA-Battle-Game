@@ -41,6 +41,6 @@ weapons = {'wisdom': {'staff': [5, 10]},
 
 players = []
 enemies = []
-characters = [player_1, enemy_2, enemy_1, enemy_3, enemy_4, player_2]
+characters = [player_1, enemy_2]
 players_corpses = []
 enemies_corpses = []
