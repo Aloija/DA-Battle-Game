@@ -2,7 +2,7 @@ import random
 
 
 class Unit:
-    def __init__(self, name, hp, damage_bonus, defence, spells_list, c_class, **other):
+    def __init__(self, name, hp, damage_bonus, armor, spells_list, c_class, **other):
         self.__name = name
         self.hp = hp
         self.max_hp = hp
@@ -22,9 +22,13 @@ class Unit:
 
         self.damage_bonus = damage_bonus
         self.aa_damage_type = other.get('damage_type', 'physic')
-        self.damage_temp_bonus = {'harm': 0, 'friendly': 0}
+        self.damage_percent_bonus = {'harm': 0, 'friendly': 0}
+        self.damage_flat_bonus = {'harm': 0, 'friendly': 0}
+        self.armor_penetration = False
 
-        self.defence = defence
+        self.armor = armor
+        self.barrier = other.get('barrier', 0)
+        self.defence = other.get('defence', 0)
         self.damage_reduce = {'magic': 0.25, 'physic': 0.5}
         self.hit_dodge = other.get('hit_dodge', 0)
 
@@ -40,12 +44,6 @@ class Unit:
 
     def get_name(self):
         return self.__name
-
-    def get_hp(self):
-        return self.hp
-
-    def get_defence(self):
-        return self.defence
 
     def set_abilities(self):
         for spell in self.spells_list:
@@ -66,21 +64,17 @@ class Unit:
 
         if isinstance(target, list):
             if len(target) > 1:
-                damage_print = damage, crit
+                damage_print = *damage, *crit
                 return damage_print
-            else:
-                tar = target[0]
-        else:
-            tar = target
 
         if damage_type == 'magic':
-            if tar.damage_reduce['magic'] > 0:
-                damage_reduce = round(tar.damage_reduce['magic'] * 100)
+            if target.damage_reduce['magic'] > 0:
+                damage_reduce = round(target.damage_reduce['magic'] * 100)
             else:
                 damage_reduce = ''
         else:
-            if tar.damage_reduce['physic'] > 0:
-                damage_reduce = round(tar.damage_reduce['physic'] * 100)
+            if target.damage_reduce['physic'] > 0:
+                damage_reduce = round(target.damage_reduce['physic'] * 100)
             else:
                 damage_reduce = ''
 
@@ -88,18 +82,18 @@ class Unit:
             damage_total = round(dmg - dmg * (damage_reduce/100))
             damage_reduce = '-', str(damage_reduce) + '%'
         else:
-            damage_total = dmg - tar.defence
+            damage_total = dmg - target.defence
 
-        if damage_total > tar.defence:
-            if tar.defence > 0:
-                defence = '-', tar.defence
-            elif tar.defence < 0:
-                defence = '+', tar.defence * -1
+        if damage_total > target.defence:
+            if target.defence > 0:
+                defence = '-', target.defence
+            elif target.defence < 0:
+                defence = '+', target.defence * -1
             else:
                 defence = ''
         else:
-            damage_print = 'урон (', *damage, *damage_reduce, '=', (damage_total+tar.defence), crit,\
-                           ') не пробивает броню - ', tar.defence
+            damage_print = 'урон (', *damage, *damage_reduce, '=', (damage_total + target.defence), crit,\
+                           ') не пробивает броню - ', target.defence
             return damage_print
 
         if dmg == damage_total:
@@ -109,14 +103,7 @@ class Unit:
 
         return damage_print
 
-
     '''                         Эффекты                        '''
-
-    def heal(self, dmg):
-        self.hp += dmg
-        if self.hp > self.max_hp:
-            self.set_hp_to_max()
-        return self.hp
 
     def take_damage(self, dmg, damage_type):
         if damage_type == 'magic':
@@ -125,11 +112,28 @@ class Unit:
             dmg -= round(dmg * self.damage_reduce['physic'])
         else:
             dmg = dmg
-        if dmg >= self.defence:
-            dmg = dmg - self.defence
-            self.hp -= dmg
+
+        if self.barrier > 0:
+            dmg -= self.barrier
+        if self.defence > 0:
+            dmg -= self.defence
+
+        if not self.armor_penetration:
+            if dmg >= self.armor:
+                dmg -= self.armor
+            else:
+                dmg = 0
+
+        self.hp -= dmg
         if self.hp < 0:
             self.hp = 0
+
+        return self.hp
+
+    def heal(self, dmg):
+        self.hp += dmg
+        if self.hp > self.max_hp:
+            self.set_hp_to_max()
         return self.hp
 
     def reduce_action(self, cost):
@@ -243,8 +247,8 @@ class Unit:
         i = 1
         print('Выберете цель:')
         for enemy in ens:
-            if enemy.get_hp() != 0:
-                print(str(i), ': ', enemy.get_name(), ' (', enemy.get_hp(), ' ХП)', sep='')
+            if enemy.hp != 0:
+                print(str(i), ': ', enemy.get_name(), ' (', enemy.hp, ' ХП)', sep='')
                 i += 1
         print('0: Главное меню')
         index = int(input()) - 1
@@ -252,9 +256,9 @@ class Unit:
     
 
 class Player(Unit):
-    def __init__(self, name, hp, damage_bonus, defence, hit_chance, crit_chance, spells_list, c_class,
+    def __init__(self, name, hp, damage_bonus, armor, hit_chance, crit_chance, spells_list, c_class,
                  weapon, characteristics):
-        Unit.__init__(self, name, hp, damage_bonus, defence, spells_list, c_class)
+        Unit.__init__(self, name, hp, damage_bonus, armor, spells_list, c_class)
         self.characteristics = characteristics
         self.hit_chance = hit_chance
         self.crit_chance = crit_chance
@@ -314,9 +318,9 @@ class Player(Unit):
             dmg = random.randint(self.damage['physic'][0], self.damage['physic'][1])
 
         if spell.harm:
-            dmg += self.damage_temp_bonus['harm']
+            dmg += self.damage_flat_bonus['harm'] + dmg * self.damage_percent_bonus['harm']
         else:
-            dmg += self.damage_temp_bonus['friendly']
+            dmg += self.damage_flat_bonus['friendly'] + dmg * self.damage_percent_bonus['friendly']
 
         if success == 1:
             dmg = round(dmg * spell.damage)
@@ -336,8 +340,8 @@ class Player(Unit):
                 effect.get_stats()
             for effect in self.debuffs:
                 effect.get_stats()
-            print('\n(', self.hit_chance, '/', self.crit_chance, ')', ' Здоровье: ', self.get_hp(), sep='')
-            print('Защита:', self.get_defence())
+            print('\n(', self.hit_chance, '/', self.crit_chance, ')', ' Здоровье: ', self.hp, sep='')
+            print('Защита:', self.armor)
             print('Урон:', *self.get_damage())
             for now in self.abilities:
                 if now['cooldown'] > 0:
@@ -357,8 +361,8 @@ class Player(Unit):
 
 
 class Enemy(Unit):
-    def __init__(self, name, hp, damage, damage_bonus, defence, spells_list, rank, c_class, **other):
-        Unit.__init__(self, name, hp, damage_bonus, defence, spells_list, c_class)
+    def __init__(self, name, hp, damage, damage_bonus, armor, spells_list, rank, c_class, **other):
+        Unit.__init__(self, name, hp, damage_bonus, armor, spells_list, c_class)
         self.rank = rank
         self.actions = ['Автоатака', 'Способность']
         self.damage = [damage[0] + self.damage_bonus, damage[1] + self.damage_bonus]
@@ -389,9 +393,9 @@ class Enemy(Unit):
             dmg = random.randint(self.damage[0], self.damage[1])
 
         if spell.harm:
-            dmg += self.damage_temp_bonus['harm']
+            dmg += self.damage_percent_bonus['harm']
         else:
-            dmg += self.damage_temp_bonus['friendly']
+            dmg += self.damage_percent_bonus['friendly']
 
         if success == 1:
             dmg = round(dmg * spell.damage)
@@ -412,8 +416,8 @@ class Enemy(Unit):
                     effect.get_stats()
                 for effect in self.debuffs:
                     effect.get_stats()
-                print('\n(', self.hit_chance, '/', self.crit_chance, ')', ' Здоровье: ', self.get_hp(), sep='')
-                print('Защита:', self.get_defence())
+                print('\n(', self.hit_chance, '/', self.crit_chance, ')', ' Здоровье: ', self.hp, sep='')
+                print('Защита:', self.armor)
                 print('Урон:', *self.get_damage())
                 for now in self.abilities:
                     if now['cooldown'] > 0:
@@ -426,7 +430,7 @@ class Enemy(Unit):
                         print(now['ability'].get_name(), ': ОТКАЧЕНО', sep='')
                 print('')
             else:
-                print(self.get_name(), ': ', self.get_hp(), sep='', end='')
+                print(self.get_name(), ': ', self.hp, sep='', end='')
                 for effect in self.buffs:
                     effect.get_stats()
                 for effect in self.debuffs:

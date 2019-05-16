@@ -68,57 +68,61 @@ class Spells:
                 dynamic_cooldown -= self.crit_strength
         return dynamic_cooldown
 
-    def use_spell(self, target, character_self, dmg, success):
-        dynamic_duration = self.dynamic_duration(character_self, target, success)
+    def use_spell(self, target, caster, dmg, success):
+        dynamic_duration = self.dynamic_duration(caster, target, success)
         dynamic_cooldown = self.dynamic_cooldown(success)
 
-        character_self.add_durs(self, dynamic_duration)
-        character_self.add_cds(self, dynamic_cooldown)
+        caster.add_durs(self, dynamic_duration)
+        caster.add_cds(self, dynamic_cooldown)
 
         if self.spell_id == 10001:   # Волшебная стрела
             target.take_damage(dmg, self.school)
-            character_self.buffs.append(Effects(('попадание (' + self.get_name() + ')'), 'hit_buff',
-                                                2, dynamic_duration, self.spell_id))
-            print(character_self.get_name(), 'получает +2 к попаданию на', dynamic_duration - 1, 'ход')
-            for effect in character_self.buffs:
+            caster.buffs.append(Effects(('попадание (' + self.get_name() + ')'), 'hit_buff',
+                                        2, dynamic_duration, self.spell_id))
+            print(caster.get_name(), 'получает +2 к попаданию на', dynamic_duration - 1, 'ход')
+            for effect in caster.buffs:
                 if effect.from_spell == self.spell_id:
-                    effect.apply_effect(character_self)
+                    effect.apply_effect(caster)
 
-            return target, character_self
+            return target, caster
 
         if self.spell_id == 31047:   # Подлый трюк
             target.take_damage(dmg, self.school)
             target.debuffs.append(Effects(('оглушение (' + self.get_name() + ')'), 'stun',
                                           0, dynamic_duration, self.spell_id))
-            print(character_self.get_name(), 'оглушает', target.get_name(), 'на',
+            print(caster.get_name(), 'оглушает', target.get_name(), 'на',
                   'текущий' if dynamic_duration == 1 else dynamic_duration - 1, 'ход')
-            return target, character_self
+            return target, caster
 
         else:
-            if self.harm:
-                target.take_damage(dmg, 'physic')
-
+            if self.targets == 'AOE':
+                if self.harm:
+                    for tar in target:
+                        tar.take_damage(dmg, 'physic')
             else:
-                target.heal(dmg)
-            return target, character_self
+                if self.harm:
+                    target.take_damage(dmg, 'physic')
+                else:
+                    target.heal(dmg)
+            return target, caster
 
-    def description(self, target, character_self, dmg, success, dice):
+    def description(self, target, caster, dmg, success, dice):
         if self.harm:
-            damage = character_self.print_damage(self.school, target, dmg, success)
+            damage = caster.print_damage(self.school, target, dmg, success)
         else:
-            if character_self.damage_bonus > 0:
-                damage = dmg - character_self.damage_bonus, '+', character_self.damage_bonus, '=', dmg
+            if caster.damage_bonus > 0:
+                damage = dmg - caster.damage_bonus, '+', caster.damage_bonus, '=', dmg
             else:
                 damage = dmg, ''
 
         if self.targets == 'single':
-            print(character_self.get_name(), ' использует ', self.get_name(), ' на ', target[0].get_name(),
+            print(caster.get_name(), ' использует ', self.get_name(), ' на ', target.get_name(),
                   ' d=', dice, ':', ' (', *damage, ')', sep='')
         elif self.targets == 'AOE':
-            print(character_self.get_name(), ' использует ', self.get_name(), ' на ВСЕХ',
+            print(caster.get_name(), ' использует ', self.get_name(), ' на ВСЕХ',
                   ' d=', dice, ':', ' (', *damage, ')', sep='')
         else:
-            print(character_self.get_name(), ' использует ', self.get_name(), ' на ',
+            print(caster.get_name(), ' использует ', self.get_name(), ' на ',
                   ', '.join([tar.get_name() + ', ' for tar in target]), ' d=', dice, ':', ' (', *damage, ')', sep='')
 
 

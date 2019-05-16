@@ -93,13 +93,13 @@ class Game:
             '''Если цель враждебная из броска вычитается штраф к попаданию по ней (уклонение)'''
 
         if is_harm_target:
-            if len(target) > 1:
-                if character_self.hit_chance <= dice + character_self.hit_harm_bonus['harm']\
+            if type(target) is list:
+                if character_self.hit_chance <= dice + character_self.hit_temp_bonus['harm']\
                         != character_self.crit_chance:
                     return dice, 1
             if dice >= character_self.crit_chance:
                 return dice, 'crit'
-            elif character_self.hit_chance <= dice - target[0].hit_dodge + character_self.hit_temp_bonus['harm'] \
+            elif character_self.hit_chance <= dice - target.hit_dodge + character_self.hit_temp_bonus['harm'] \
                     != character_self.crit_chance:
                 return dice, 1
             else:
@@ -182,22 +182,21 @@ class Game:
 
             return target
 
-    def spell_choose(self, character_self):
-        index = character_self.choose_magic()
+    def spell_choose(self, caster):
+        index = caster.choose_magic()
         if index == -1:     # возврат назад в меню
-            self.actions(character_self)
+            self.actions(caster)
             return
-        spell = character_self.abilities[index]['ability']
-        target = self.spell_target(character_self, spell)
-        dice, success = self.roll_dice(character_self, target, spell.harm)
+        spell = caster.abilities[index]['ability']
+        target = self.spell_target(caster, spell)
+        dice, success = self.roll_dice(caster, target, spell.harm)
         if success == 0:
-            print(character_self.get_name(), ' (d=', dice, ') промахивается', sep='')
+            print(caster.get_name(), ' (d=', dice, ') промахивается', sep='')
             return
         else:
-            dmg = character_self.roll_spell_damage(spell, success)
-            for tar in target:
-                spell.use_spell(tar, character_self, dmg, success)
-                spell.description(target, character_self, dmg, success, dice)
+            dmg = caster.roll_spell_damage(spell, success)
+            spell.use_spell(target, caster, dmg, success)
+            spell.description(target, caster, dmg, success, dice)
 
         return target
 
@@ -205,11 +204,11 @@ class Game:
         target = []
         if spell.harm:
             if spell.targets == 'single':
-                target.append(self.choose_target(character_self, enemies, players))
+                target = self.choose_target(character_self, enemies, players)
                 if self.go_back:
                     return
             elif spell.targets == 'AOE':
-                target = enemies
+                target = enemies    # ТУТ ВСЕ НЕПРАВИЛЬНО
             else:
                 tar_amount = spell.targets
                 for i in range(tar_amount):
@@ -220,7 +219,7 @@ class Game:
 
         elif not spell.harm:
             if spell.targets == 'single':
-                target.append(self.choose_target(character_self, players, enemies))
+                target = self.choose_target(character_self, players, enemies)
                 if self.go_back:
                     return
             elif spell.targets == 'AOE':
