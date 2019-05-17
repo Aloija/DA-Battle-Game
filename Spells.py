@@ -74,19 +74,18 @@ class Spells:
         if self.spell_id == 10001:   # Волшебная стрела
             target.take_damage(dmg, self.school)
             effect = Effects('hit_buff', 2, dynamic_duration, self, caster)
+            caster.remove_identical_effect(effect)
             caster.buffs.append(effect)
             effect.apply_effect(caster)
             print(caster.get_name(), 'получает +2 к попаданию на', dynamic_duration - 1, 'ход')
 
-            return target, caster
-
         if self.spell_id == 31047:   # Подлый трюк
             target.take_damage(dmg, self.school)
             effect = Effects('stun', 0, dynamic_duration, self, caster)
+            caster.remove_identical_effect(effect)
             target.debuffs.append(effect)
             print(caster.get_name(), 'оглушает', target.get_name(), 'на',
                   'текущий' if dynamic_duration == 1 else dynamic_duration - 1, 'ход')
-            return target, caster
 
         else:
             if self.targets == 'AOE':
@@ -98,7 +97,12 @@ class Spells:
                     target.take_damage(dmg, 'physic')
                 else:
                     target.heal(dmg)
-            return target, caster
+                    effect = Effects('hit_buff', 5, dynamic_duration, self, caster)
+                    caster.remove_identical_effect(effect)
+                    caster.buffs.append(effect)
+                    effect.apply_effect(caster)
+
+        return target, caster
 
     def description(self, target, caster, dmg, success, dice):
         if self.harm:

@@ -16,8 +16,8 @@ test_spells = [magic_bolt, spell_2, spell_3, heal]
 '''                     ПЕРСОНАЖИ        '''
 
 player_1 = Player(name='Мэйрис', hp=200, damage_bonus=0, armor=-2, characteristics={'stamina': 2, 'strength': 0,
-                                                                                   'agility': 4, 'intelligence': 1,
-                                                                                   'wisdom': 20, 'observation': 3},
+                                                                                    'agility': 4, 'intelligence': 1,
+                                                                                    'wisdom': 20, 'observation': 3},
                   hit_chance=1, crit_chance=20, spells_list=test_spells, c_class='rogue', weapon='ranged')
 
 player_2 = Player(name='Хекс', hp=20, damage_bonus=0, armor=2, characteristics={'stamina': 3, 'strength': 3,

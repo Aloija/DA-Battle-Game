@@ -39,11 +39,11 @@ class Game:
         for char in characters:
             if char.hp == 0:
                 for effect in char.buffs:
-                    char.set_effect_to_0(effect)
+                    char.set_effects_to_0(effect)
                 for effect in char.debuffs:
-                    char.set_effect_to_0(effect)
+                    char.set_effects_to_0(effect)
                 for effect in char.auras:
-                    char.set_effect_to_0(effect)
+                    char.set_effects_to_0(effect)
                 for now in char.abilities:
                     now['duration'] = -1
                     now['cooldown'] = -1

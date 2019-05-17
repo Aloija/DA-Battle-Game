@@ -200,7 +200,7 @@ class Unit:
     def on_time_effects(self):
         pass
 
-    def set_effect_to_0(self, effect):
+    def set_effects_to_0(self, effect):
         if effect in self.buffs:
             effect.duration = 0
         if effect in self.debuffs:
@@ -211,6 +211,28 @@ class Unit:
         self.remove_effect(effect)
 
         return self
+
+    def remove_identical_effect(self, effect):
+        for item in self.buffs:
+            if effect.mechanic == item.mechanic:
+                for spell in self.abilities:
+                    if spell['ability'].spell_id == item.from_spell.spell_id:
+                        spell['duration'] = -1
+                self.set_effects_to_0(item)
+                return
+        for item in self.debuffs:
+            if effect.mechanic == item.mechanic:
+                for spell in self.abilities:
+                    if spell['ability'].spell_id == item.from_spell.spell_id:
+                        spell['duration'] = -1
+                self.set_effects_to_0(item)
+                return
+        for item in self.auras:
+            if effect.mechanic == item.mechanic:
+                for spell in self.abilities:
+                    if spell['ability'].spell_id == item.from_spell.spell_id:
+                        spell['duration'] = -1
+                self.set_effects_to_0(item)
 
     '''                         Действия                   '''
 
