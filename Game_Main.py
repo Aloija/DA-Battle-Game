@@ -17,6 +17,7 @@ while is_game != 0:
         for effect in character.debuffs:
             character.effect_reduce_duration(effect)
         character.reset_actions()
+        character.reset_spell_usage()
         game.death_check()
     print('\nСТАТИСТИКА:\n')
     game.get_stats()

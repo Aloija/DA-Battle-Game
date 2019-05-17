@@ -27,9 +27,9 @@ class Unit:
         self.armor_penetration = False
 
         self.armor = armor
-        self.barrier = other.get('barrier', 10)
+        self.barrier = other.get('barrier', 0)
         self.defence = other.get('defence', 10)
-        self.damage_reduce = {'magic': 0, 'physic': 0}
+        self.damage_reduce = {'magic': 0.25, 'physic': 0.25}
         self.hit_dodge = other.get('hit_dodge', 0)
 
         self.initiative = 0
@@ -53,9 +53,12 @@ class Unit:
         self.actions_count = 3
         return self.actions_count
 
+    def reset_spell_usage(self):
+        for spell in self.abilities:
+            spell['ability'].reset_usage()
+
     @staticmethod
     def print_damage(damage_type, target, dmg, success):
-        # ПЕЧАТЬ ОБОРОНЫ И БАРЬЕРА ДОБАВИТЬ
         damage = dmg, ''
 
         if success == 'crit':
@@ -69,37 +72,30 @@ class Unit:
 
         if damage_type == 'magic':
             if target.damage_reduce['magic'] > 0:
-                damage_reduce = round(target.damage_reduce['magic'] * 100)
+                damage_reduce = round(target.damage_reduce['magic'] * dmg)
             else:
                 damage_reduce = ''
         else:
             if target.damage_reduce['physic'] > 0:
-                damage_reduce = round(target.damage_reduce['physic'] * 100)
+                damage_reduce = round(target.damage_reduce['physic'] * dmg)
             else:
                 damage_reduce = ''
 
         if damage_reduce != '':
-            damage_total = round(dmg - dmg * (damage_reduce/100))
-            damage_reduce = '-', str(damage_reduce) + '%'
+            damage_total = round(dmg - damage_reduce)
+            damage_reduce = '-', str(damage_reduce)
         else:
             damage_total = dmg - target.armor
 
-        if damage_total > target.armor:
-            if target.armor > 0:
-                armor = '-', target.armor
-            elif target.armor < 0:
-                armor = '+', target.armor * -1
-            else:
-                armor = ''
-        else:
-            damage_print = 'урон (', *damage, *damage_reduce, '=', (damage_total + target.armor), crit,\
-                           ') не пробивает броню)'
-            return damage_print
+        if target.barrier == 0 and target.defence == 0:
+            if damage_total < target.armor:
+                damage_print = 'урон (', *damage, *damage_reduce, '=', damage_total, crit, ') не пробивает броню)'
+                return damage_print
 
         if dmg == damage_total:
             damage_print = dmg, crit
         else:
-            damage_print = *damage, *damage_reduce, *armor, '=', damage_total, crit
+            damage_print = *damage, *damage_reduce, '=', damage_total, crit
 
         return damage_print
 
@@ -110,18 +106,15 @@ class Unit:
             dmg -= round(dmg * self.damage_reduce['magic'])
         elif damage_type == 'physic':
             dmg -= round(dmg * self.damage_reduce['physic'])
-        else:
-            dmg = dmg
 
         if self.barrier > 0:
-            dmg -= self.barrier
-            self.barrier -= dmg + self.barrier
+            dmg, self.barrier = dmg - self.barrier, self.barrier - dmg
             if self.barrier < 0:
                 self.barrier = 0
-        if dmg > 0:
-            if self.defence > 0:
-                dmg -= self.defence
-                self.defence -= dmg + self.barrier
+
+        if self.defence > 0:
+            if dmg > 0:
+                dmg, self.defence = dmg - self.defence, self.defence - dmg
                 if self.defence < 0:
                     self.defence = 0
 
@@ -239,13 +232,17 @@ class Unit:
     def choose_magic(self):
         i = 1
         print('Выберте способность:')
-        for spell in self.spells_list:
-            print(str(i), ': ', spell.get_name(), sep='')
+        for spell in self.abilities:
+            print(str(i), ': ', spell['ability'].get_name(), ', кд - ',
+                  spell['cooldown'] if spell['cooldown'] > 0 else 'нет', sep='')
             i += 1
         print('0: Главное меню')
         index = int(input()) - 1
         if index != -1 and self.abilities[index]['cooldown'] > -1:
-            print(self.abilities[index]['ability'].name, 'на перезарядке\n')
+            print(self.abilities[index]['ability'].get_name(), 'на перезарядке\n')
+            index = self.choose_magic()
+        if index != -1 and self.abilities[index]['ability'].is_used:
+            print('Вы не можете повторно использовать', self.abilities[index]['ability'].get_name(), '\n')
             index = self.choose_magic()
         return index
 

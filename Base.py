@@ -6,6 +6,7 @@ class Game:
         self.go_back = False
         self.test_mode = True
         self.crit_modifier = 1.5
+        self.dice_range = 20
 
     def pre_start(self):
         for char in characters:
@@ -86,12 +87,14 @@ class Game:
         dice = 0
 
         if self.test_mode:
-            dice = random.randint(1, 20)
+            dice = random.randint(1, self.dice_range)
         elif not self.test_mode:
             dice = int(input('Введите результат броска:\n'))
 
-            '''Если цель враждебная из броска вычитается штраф к попаданию по ней (уклонение)'''
+        if dice == 1:
+            return dice, 'fail'
 
+        '''Если цель враждебная из броска вычитается штраф к попаданию по ней (уклонение)'''
         if is_harm_target:
             if isinstance(target, list):
                 if character_self.hit_chance <= dice + character_self.hit_temp_bonus['harm']\
@@ -166,7 +169,7 @@ class Game:
             return
         dice, success = self.roll_dice(caster, target, True)
 
-        if success == 0:
+        if success == 0 or 'fail':
             print(caster.get_name(), ' d=', dice, ': промахивается', sep='')
             return
         else:
@@ -187,12 +190,15 @@ class Game:
         dice, success = self.roll_dice(caster, target, spell.harm)
         if success == 0:
             print(caster.get_name(), ' (d=', dice, ') промахивается', sep='')
+            spell.is_used = True
             return
+        elif success == 'fail':
+            caster.add_cds(spell, 2)
+            print(caster.get_name(), ' (d=', dice, ') критическая неудача', sep='')
         else:
             dmg = caster.roll_spell_damage(spell, success)
             spell.use_spell(target, caster, dmg, success)
             spell.description(target, caster, dmg, success, dice)
-
         return target
 
     def spell_target(self, character_self, spell):
