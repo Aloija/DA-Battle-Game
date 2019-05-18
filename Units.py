@@ -28,8 +28,8 @@ class Unit:
 
         self.armor = armor
         self.barrier = other.get('barrier', 0)
-        self.defence = other.get('defence', 10)
-        self.damage_reduce = {'magic': 0.25, 'physic': 0.25}
+        self.defence = other.get('defence', 0)
+        self.damage_reduce = {'magic': 0, 'physic': 0}
         self.hit_dodge = other.get('hit_dodge', 0)
 
         self.initiative = 0
@@ -40,6 +40,9 @@ class Unit:
         pass
 
     def set_damage(self, weapons_list):
+        pass
+
+    def safe_roll(self, threshold, characteristic):
         pass
 
     def get_name(self):
@@ -58,8 +61,13 @@ class Unit:
             spell['ability'].reset_usage()
 
     @staticmethod
-    def print_damage(damage_type, target, dmg, success):
+    def print_damage(damage_type, target, dmg, success, arm_pen):
         damage = dmg, ''
+
+        if arm_pen:
+            arm_pen = ', Пробивающий'
+        else:
+            arm_pen = ''
 
         if success == 'crit':
             crit = ', Критический'
@@ -67,7 +75,7 @@ class Unit:
             crit = ''
 
         if isinstance(target, list):
-            damage_print = *damage, *crit
+            damage_print = *damage, *crit, arm_pen
             return damage_print
 
         if damage_type == 'magic':
@@ -85,23 +93,23 @@ class Unit:
             damage_total = round(dmg - damage_reduce)
             damage_reduce = '-', str(damage_reduce)
         else:
-            damage_total = dmg - target.armor
+            damage_total = dmg
 
         if target.barrier == 0 and target.defence == 0:
-            if damage_total < target.armor:
+            if damage_total < target.armor and not arm_pen:
                 damage_print = 'урон (', *damage, *damage_reduce, '=', damage_total, crit, ') не пробивает броню)'
                 return damage_print
 
         if dmg == damage_total:
-            damage_print = dmg, crit
+            damage_print = dmg, crit, arm_pen
         else:
-            damage_print = *damage, *damage_reduce, '=', damage_total, crit
+            damage_print = *damage, *damage_reduce, '=', damage_total, crit, arm_pen
 
         return damage_print
 
     '''                         Эффекты                        '''
 
-    def take_damage(self, dmg, damage_type):
+    def take_damage(self, dmg, damage_type, arm_pen):
         if damage_type == 'magic':
             dmg -= round(dmg * self.damage_reduce['magic'])
         elif damage_type == 'physic':
@@ -118,7 +126,7 @@ class Unit:
                 if self.defence < 0:
                     self.defence = 0
 
-        if not self.armor_penetration:
+        if not arm_pen:
             if dmg >= self.armor:
                 dmg -= self.armor
             else:
@@ -358,6 +366,16 @@ class Player(Unit):
 
         return dmg
 
+    def safe_roll(self, threshold, characteristic):
+        characteristic = sorted(characteristic, key=lambda x: self.characteristics[x])
+        dice = random.randint(1, 20) + characteristic[0]
+        if dice >= threshold:
+            success = 1
+        else:
+            success = 0
+
+        return dice, success
+
     def get_stats(self):
         if self.defence > 0:
             defence = '[', self.defence, ']'
@@ -443,6 +461,15 @@ class Enemy(Unit):
                 dmg = round(dmg * spell.damage)
 
         return dmg
+
+    def safe_roll(self, threshold, characteristic):
+        dice = random.randint(1, 20)
+        if dice >= threshold:
+            success = 1
+        else:
+            success = 0
+
+        return dice, success
 
     def get_stats(self):
         if self.defence > 0:

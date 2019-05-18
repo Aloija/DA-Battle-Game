@@ -17,7 +17,7 @@ test_spells = [magic_bolt, spell_2, spell_3, heal]
 
 player_1 = Player(name='Мэйрис', hp=200, damage_bonus=0, armor=-2, characteristics={'stamina': 2, 'strength': 0,
                                                                                     'agility': 4, 'intelligence': 1,
-                                                                                    'wisdom': 20, 'observation': 3},
+                                                                                    'wisdom': 0, 'observation': 3},
                   hit_chance=1, crit_chance=20, spells_list=test_spells, c_class='rogue', weapon='ranged')
 
 player_2 = Player(name='Хекс', hp=20, damage_bonus=0, armor=2, characteristics={'stamina': 3, 'strength': 3,
@@ -26,9 +26,9 @@ player_2 = Player(name='Хекс', hp=20, damage_bonus=0, armor=2, characteristi
                   hit_chance=10, crit_chance=20, spells_list=test_spells, c_class='warrior', weapon='dual_swords')
 
 
-enemy_1 = Enemy(name='Карамелька', hp=30, damage=[12, 17], damage_bonus=0, armor=4, spells_list=test_spells,
+enemy_1 = Enemy(name='Карамелька', hp=30, damage=[12, 17], damage_bonus=0, armor=1, spells_list=test_spells,
                 rank='common', c_class='demon')
-enemy_2 = Enemy(name='Разикаль', hp=300, damage=[9, 14], damage_bonus=5, armor=4, spells_list=test_spells,
+enemy_2 = Enemy(name='Разикаль', hp=300, damage=[9, 14], damage_bonus=5, armor=50, spells_list=test_spells,
                 rank='elite', damage_type='magic', c_class='dragon')
 
 

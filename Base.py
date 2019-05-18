@@ -94,23 +94,22 @@ class Game:
         if dice == 1:
             return dice, 'fail'
 
+        if dice >= character_self.crit_chance:
+            return dice, 'crit'
+
         '''Если цель враждебная из броска вычитается штраф к попаданию по ней (уклонение)'''
         if is_harm_target:
             if isinstance(target, list):
                 if character_self.hit_chance <= dice + character_self.hit_temp_bonus['harm']\
                         != character_self.crit_chance:
                     return dice, 1
-            if dice >= character_self.crit_chance:
-                return dice, 'crit'
-            elif character_self.hit_chance <= dice - target.hit_dodge + character_self.hit_temp_bonus['harm'] \
+            if character_self.hit_chance <= dice - target.hit_dodge + character_self.hit_temp_bonus['harm'] \
                     != character_self.crit_chance:
                 return dice, 1
             else:
                 return dice, 0
         else:
-            if dice >= character_self.crit_chance:
-                return dice, 'crit'
-            elif character_self.hit_chance <= dice + character_self.hit_temp_bonus['friendly'] \
+            if character_self.hit_chance <= dice + character_self.hit_temp_bonus['friendly'] \
                     != character_self.crit_chance:
                 return dice, 1
             else:
@@ -169,13 +168,13 @@ class Game:
             return
         dice, success = self.roll_dice(caster, target, True)
 
-        if success == 0 or 'fail':
+        if success == 0 or success == 'fail':
             print(caster.get_name(), ' d=', dice, ': промахивается', sep='')
             return
         else:
             dmg = caster.roll_aa_damage(success)
-            dmg_print = caster.print_damage(caster.aa_damage_type, target, dmg, success)
-            target.take_damage(dmg, caster.aa_damage_type)
+            dmg_print = caster.print_damage(caster.aa_damage_type, target, dmg, success, caster.armor_penetration)
+            target.take_damage(dmg, caster.aa_damage_type, caster.armor_penetration)
             print(caster.get_name(), ' атакует ', target.get_name(), ' d=', dice, ':', ' (', *dmg_print, ')', sep='')
 
             return target

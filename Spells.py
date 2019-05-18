@@ -15,6 +15,7 @@ class Spells:
         self.crit_strength = crit_strength
         self.action_cost = 2    # ДОДЕЛАТЬ
         self.is_used = False
+        self.armor_penetration = other.get('armor_penetration', False)
 
     def __str__(self):
         return self.name
@@ -70,9 +71,10 @@ class Spells:
         caster.add_cds(self, dynamic_cooldown)
 
         self.is_used = True
+        arm_pen = self.armor_penetration
 
         if self.spell_id == 10001:   # Волшебная стрела
-            target.take_damage(dmg, self.school)
+            target.take_damage(dmg, self.school, arm_pen)
             effect = Effects('hit_buff', 2, dynamic_duration, self, caster)
             caster.remove_identical_effect(effect)
             caster.buffs.append(effect)
@@ -80,7 +82,7 @@ class Spells:
             print(caster.get_name(), 'получает +2 к попаданию на', dynamic_duration - 1, 'ход')
 
         if self.spell_id == 31047:   # Подлый трюк
-            target.take_damage(dmg, self.school)
+            target.take_damage(dmg, self.school, arm_pen)
             effect = Effects('stun', 0, dynamic_duration, self, caster)
             caster.remove_identical_effect(effect)
             target.debuffs.append(effect)
@@ -91,10 +93,10 @@ class Spells:
             if self.targets == 'AOE':
                 if self.harm:
                     for tar in target:
-                        tar.take_damage(dmg, 'physic')
+                        tar.take_damage(dmg, 'physic', arm_pen)
             else:
                 if self.harm:
-                    target.take_damage(dmg, 'physic')
+                    target.take_damage(dmg, 'physic', arm_pen)
                 else:
                     target.heal(dmg)
                     effect = Effects('hit_buff', 5, dynamic_duration, self, caster)
@@ -106,7 +108,7 @@ class Spells:
 
     def description(self, target, caster, dmg, success, dice):
         if self.harm:
-            damage = caster.print_damage(self.school, target, dmg, success)
+            damage = caster.print_damage(self.school, target, dmg, success, self.armor_penetration)
         else:
             if caster.damage_bonus > 0:
                 damage = dmg - caster.damage_bonus, '+', caster.damage_bonus, '=', dmg
