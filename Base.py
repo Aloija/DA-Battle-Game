@@ -83,6 +83,16 @@ class Game:
         print('ИНИЦИАТИВА:')
         print(', '.join([character.get_name() + '(' + str(character.initiative) + ')' for character in characters]))
 
+    @staticmethod
+    def next_action_ability_check(caster):
+        for effect in caster.buffs:
+            if effect.is_next_action:
+                for now in caster.abilities:
+                    if effect.from_spell == now['ability']:
+                        now['duration'] -= 1
+                effect.duration -= 1
+                caster.remove_effect(effect)
+
     def roll_dice(self, character_self, target, is_harm_target):
         dice = 0
 
@@ -115,51 +125,53 @@ class Game:
             else:
                 return dice, 0
 
-    def actions(self, character_self):
+    def actions(self, caster):
         self.go_back = False
-        action_index = character_self.choose_action()
-        if character_self.get_rank() == 'common':
+        action_index = caster.choose_action()
+        if caster.get_rank() == 'common':
             if action_index == 0:  # AA
-                self.auto_attack(character_self)
-                character_self.reduce_action(3)
+                self.auto_attack(caster)
+                caster.reduce_action(3)
 
             elif action_index == -1:
-                character_self.reduce_action(3)
+                caster.reduce_action(3)
                 return
 
         else:
             if action_index == 0:       # AA
-                if character_self.actions_count >= 2:
-                    self.auto_attack(character_self)
-                    character_self.reduce_action(2)
-                elif character_self.actions_count == 1:
+                if caster.actions_count >= 2:
+                    self.auto_attack(caster)
+                    caster.reduce_action(2)
+                    self.next_action_ability_check(caster)
+                elif caster.actions_count == 1:
                     print('Персонаж не может использовать автоатаку, выберете другое действие')
                 else:
                     return
 
             elif action_index == 1:     # spell
-                if character_self.actions_count >= 2:
-                    self.spell_choose(character_self)
-                    character_self.reduce_action(2)
-                elif character_self.actions_count == 1:
+                if caster.actions_count >= 2:
+                    self.spell_choose(caster)
+                    caster.reduce_action(2)
+                    self.next_action_ability_check(caster)
+                elif caster.actions_count == 1:
                     print('Персонаж не может использовать заклинания, выберете другое действие')
                 else:
                     return
 
             elif action_index == 2:     # item
-                if character_self.actions_count >= 1:
-                    character_self.heal(5)
-                    character_self.reduce_action(1)
-                    print(character_self.get_name(), ' пьет зелье и излечивается на ', 5, ' ХП', sep='')
+                if caster.actions_count >= 1:
+                    caster.heal(5)
+                    caster.reduce_action(1)
+                    print(caster.get_name(), ' пьет зелье и излечивается на ', 5, ' ХП', sep='')
                 else:
                     return
 
             elif action_index == -1:
-                character_self.actions_count = 0
+                caster.actions_count = 0
                 return
 
-        if character_self.actions_count > 0:
-            self.actions(character_self)
+        if caster.actions_count > 0:
+            self.actions(caster)
         return
 
     def auto_attack(self, caster):
@@ -208,7 +220,10 @@ class Game:
                 if self.go_back:
                     return
             elif spell.targets == 'AOE':
-                target = enemies    # ТУТ ВСЕ НЕПРАВИЛЬНО
+                if character_self in players:
+                    target = enemies
+                else:
+                    target = players
             else:
                 tar_amount = spell.targets
                 for i in range(tar_amount):
@@ -223,7 +238,10 @@ class Game:
                 if self.go_back:
                     return
             elif spell.targets == 'AOE':
-                target = players
+                if character_self in players:
+                    target = players
+                else:
+                    target = enemies
             else:
                 tar_amount = spell.targets
                 for i in range(tar_amount):
@@ -231,6 +249,14 @@ class Game:
                     if self.go_back:
                         return
                     target.append(i)
+
+        else:
+            if spell.targets == 'single':
+                target = character_self.choolse_target(characters)
+                if self.go_back:
+                    return
+            else:
+                target = characters
 
         return target
 

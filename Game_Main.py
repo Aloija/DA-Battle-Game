@@ -4,7 +4,7 @@ from Objects import *
 turn = 1
 is_game = 1
 
-game.test_mode = True
+game.test_mode = False
 game.pre_start()
 
 while is_game != 0:

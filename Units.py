@@ -53,7 +53,7 @@ class Unit:
             self.abilities.append({'ability': spell, 'cooldown': -1, 'duration': -1})
 
     def reset_actions(self):
-        self.actions_count = 3
+        self.actions_count = 300
         return self.actions_count
 
     def reset_spell_usage(self):
@@ -170,8 +170,9 @@ class Unit:
     def dur_reduce(self, spell):
         for now in self.abilities:
             if now['ability'] == spell:
-                if now['duration'] > -1:
-                    now['duration'] -= 1
+                if not spell.is_next_action:
+                    if now['duration'] > -1:
+                        now['duration'] -= 1
         return self.abilities
 
     def set_hp_to_max(self):
@@ -187,7 +188,8 @@ class Unit:
 
     def effect_reduce_duration(self, effect):
         if effect in self.buffs:
-            effect.dur_reduce()
+            if not effect.is_next_action:
+                effect.dur_reduce()
         if effect in self.debuffs:
             effect.dur_reduce()
 
@@ -201,11 +203,15 @@ class Unit:
                 effect.remove_effect(self)
                 self.buffs.remove(effect)
             if effect in self.debuffs:
+                effect.remove_effect(self)
                 self.debuffs.remove(effect)
+            if effect in self.auras:
+                effect.remove_effect(self)
+                self.auras.remove(effect)
 
         return self
 
-    def on_time_effects(self):
+    def on_time_effects(self, effect):
         pass
 
     def set_effects_to_0(self, effect):
@@ -224,21 +230,21 @@ class Unit:
         for item in self.buffs:
             if effect.mechanic == item.mechanic:
                 for spell in self.abilities:
-                    if spell['ability'].spell_id == item.from_spell.spell_id:
+                    if spell['ability'] == item.from_spell:
                         spell['duration'] = -1
                 self.set_effects_to_0(item)
                 return
         for item in self.debuffs:
             if effect.mechanic == item.mechanic:
                 for spell in self.abilities:
-                    if spell['ability'].spell_id == item.from_spell.spell_id:
+                    if spell['ability'] == item.from_spell:
                         spell['duration'] = -1
                 self.set_effects_to_0(item)
                 return
         for item in self.auras:
             if effect.mechanic == item.mechanic:
                 for spell in self.abilities:
-                    if spell['ability'].spell_id == item.from_spell.spell_id:
+                    if spell['ability'] == item.from_spell:
                         spell['duration'] = -1
                 self.set_effects_to_0(item)
 
